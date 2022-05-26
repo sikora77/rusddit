@@ -1,0 +1,13 @@
+[package]
+edition = "2021"
+name = "rusddit"
+version = "0.1.0"
+[dependencies]
+viuer = {version="0.6.1",features=["sixel"]}
+serde_json = "1.0"
+reqwest = { version = "0.11", features = ["json","blocking","cookies"] }
+tui="0.18.0"
+crossterm="0.23.2"
+home = "0.5.3"
+[[example]]
+name = "helper" # examples/helper.rs
