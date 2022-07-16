@@ -1,8 +1,10 @@
 mod app;
 mod tabs;
+mod user_config;
 mod utils;
 
 use crate::app::App;
+use crate::user_config::UserConfig;
 
 use crossterm::{
 	event::{DisableMouseCapture, EnableMouseCapture},
@@ -22,32 +24,57 @@ static mut LAST_POST_ID: String = String::new();
 
 fn main() -> Result<(), Box<dyn Error>> {
 	let args: Vec<String> = std::env::args().collect();
-	for i in 0..args.len() {
-		let path = Path::join(
-			home::home_dir().expect("what").as_path(),
-			Path::new(".config/rusddit/"),
-		);
-		if args[i] == "-c" || args[i] == "--cookie" {
-			if Path::exists(Path::join(path.as_path(), "cookie.txt").as_path()) == false {
-				match fs::create_dir_all(path.as_path()) {
-					Ok(_x) => {
-						let _file = std::fs::File::create(Path::join(path.as_path(), "cookie.txt"))
-							.expect("Shoouldnt happen");
-						let _res = fs::write(
-							Path::join(path.as_path(), "cookie.txt"),
-							args[i + 1].clone(),
-						);
-					}
-					Err(_x) => {
-						println!("{}", "Couldn't create cookie file")
-					}
-				}
+	let mut subreddit: String = "".to_owned();
+	let path = Path::join(
+		home::home_dir().expect("what").as_path(),
+		Path::new(".config/rusddit/"),
+	);
+	let mut user_config: UserConfig = UserConfig::new();
+	if Path::exists(Path::join(path.as_path(), "config.txt").as_path()) == false {
+		match fs::create_dir_all(path.as_path()) {
+			Ok(_x) => {
+				let _file = std::fs::File::create(Path::join(path.as_path(), "config.txt"))
+					.expect("Shouldnt happen");
+			}
+			Err(_x) => {
+				println!("{}", "Couldn't create cookie file")
 			}
 		}
 	}
+	for i in 0..args.len() {
+		if args[i] == "-c" || args[i] == "--cookie" {
+			//TODO implement tabs
+			user_config.changeConfig(Some(args[i + 1].to_string()), None);
+		}
+		if args[i] == "-s" || args[i] == "--subreddit" {
+			subreddit = format!("{}{}", "r/", args[i + 1].clone());
+		}
+		if args[i] == "-h" || args[i] == "--help" {
+			print!("rusddit is a terminal client for reddit written in rust\n\t-s <subreddit>\t--subreddit <subreddit>\tstart in given subreddit\n\t-c <cookie>\t--cookie <cookie>\t save reddit cookie for sessions");
+			return Ok(());
+		}
+	}
+	// let reddit_cookie = match std::fs::read_to_string(Path::join(
+	// 	home::home_dir().expect("what").as_path(),
+	// 	Path::new(".config/rusddit/cookie.txt"),
+	// )) {
+	// 	Ok(x) => x,
+	// 	Err(_x) => {
+	// 		println!("Couldn't find cookie file. Starting an anonymous session");
+	// 		"".to_string()
+	// 	}
+	// };
+	user_config.readConfig();
+	let reddit_cookie = user_config.cookie;
 	let m: Vec<serde_json::Value>;
 	unsafe {
-		m = utils::get_posts("".to_owned(), false, "hot".to_string(), &mut LAST_POST_ID);
+		m = utils::get_posts(
+			subreddit.to_owned(),
+			false,
+			"hot".to_string(),
+			&mut LAST_POST_ID,
+			reddit_cookie.clone(),
+		);
 	}
 
 	// setup terminal
@@ -58,7 +85,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	let mut terminal = Terminal::new(backend)?;
 
 	// create app and run it
-	let app = App::new();
+	let app = App::new(reddit_cookie.clone());
 	// app.update_comments(m.clone(), 0);
 	let res;
 	unsafe {

@@ -1130,6 +1130,7 @@ dependencies = [
  "crossterm",
  "home",
  "reqwest",
+ "serde",
  "serde_json",
  "tui",
  "viuer",

@@ -1,5 +1,6 @@
 use crossterm::event::{self, Event, KeyCode};
 use std::io;
+use std::path::Path;
 use tui::{backend::Backend, widgets::ListState, Terminal};
 
 use crate::ui;
@@ -61,10 +62,11 @@ pub struct App<'a> {
 	pub sort_by: String,
 	pub comments_sort_by: String,
 	pub current_focus: usize,
+	pub cookie: String,
 }
 
 impl<'a> App<'a> {
-	pub fn new() -> App<'a> {
+	pub fn new(cookie: String) -> App<'a> {
 		App {
 			titles: vec!["Home", "Post", "Search"],
 			current_focus: 0,
@@ -76,6 +78,7 @@ impl<'a> App<'a> {
 			sort_by: "hot".to_string(),
 			comments_sort_by: "best".to_string(),
 			comment_scroll: 0,
+			cookie: cookie,
 		}
 	}
 	pub fn post_scroll_up(&mut self, ammount: u16) {
@@ -96,10 +99,14 @@ impl<'a> App<'a> {
 	}
 
 	pub fn next(&mut self) {
+		self.comment_scroll = 0;
+		self.post_scroll = 0;
 		self.index = (self.index + 1) % self.titles.len();
 	}
 
 	pub fn previous(&mut self) {
+		self.comment_scroll = 0;
+		self.post_scroll = 0;
 		if self.index > 0 {
 			self.index -= 1;
 		} else {
@@ -149,6 +156,7 @@ pub fn run_app<B: Backend>(
 ) -> io::Result<()> {
 	loop {
 		terminal.draw(|f| ui(f, &mut app, &mut v))?;
+		let reddit_cookie = app.cookie.clone();
 		if let Event::Key(key) = event::read()? {
 			if app.index == 0 {
 				match key.code {
@@ -164,6 +172,7 @@ pub fn run_app<B: Backend>(
 							false,
 							app.sort_by.clone(),
 							&mut last_post_id,
+							reddit_cookie,
 						);
 					}
 					KeyCode::Char('b') => {
@@ -173,6 +182,7 @@ pub fn run_app<B: Backend>(
 							false,
 							app.sort_by.clone(),
 							&mut last_post_id,
+							reddit_cookie,
 						);
 					}
 					KeyCode::Char('c') => {
@@ -182,6 +192,7 @@ pub fn run_app<B: Backend>(
 							false,
 							app.sort_by.clone(),
 							&mut last_post_id,
+							reddit_cookie,
 						);
 					}
 					KeyCode::Right => {
@@ -196,6 +207,7 @@ pub fn run_app<B: Backend>(
 								true,
 								app.sort_by.clone(),
 								&mut last_post_id,
+								reddit_cookie,
 							);
 							app.items.state.select(Some(0));
 						}
@@ -246,6 +258,7 @@ pub fn run_app<B: Backend>(
 								true,
 								app.sort_by.clone(),
 								&mut last_post_id,
+								reddit_cookie,
 							);
 							app.items.state.select(Some(0));
 						}
@@ -272,6 +285,7 @@ pub fn run_app<B: Backend>(
 							false,
 							app.sort_by.clone(),
 							&mut last_post_id,
+							reddit_cookie,
 						);
 						app.items.state.select(Some(0));
 						// app.index = 0;

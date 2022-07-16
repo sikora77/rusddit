@@ -5,6 +5,7 @@ pub fn get_posts(
 	before: bool,
 	sort_by: String,
 	mut last_post_id: &mut String,
+	reddit_cookie: String,
 ) -> Vec<serde_json::Value> {
 	let slash = match input.as_str() {
 		"" => "",
@@ -17,16 +18,7 @@ pub fn get_posts(
 	if before {
 		url = format!("{}{}{}", url, "&after=", last_post_id.clone())
 	}
-	let reddit_cookie = match std::fs::read_to_string(Path::join(
-		home::home_dir().expect("what").as_path(),
-		Path::new(".config/rusddit/cookie.txt"),
-	)) {
-		Ok(x) => x,
-		Err(_x) => {
-			println!("Couldn't find cookie file. Starting an anonymous session");
-			"".to_string()
-		}
-	};
+
 	let client_builder: reqwest::blocking::ClientBuilder;
 	if reddit_cookie != "" {
 		let cookie = &format!(
